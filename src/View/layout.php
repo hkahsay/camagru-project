@@ -11,7 +11,14 @@
 
     <main class="site-main">
         <div class="site-shell">
-            <?php require $viewPath; ?>
+            <?php
+            if (isset($viewPath) && is_file($viewPath)) {
+                require $viewPath;
+            } else {
+                http_response_code(500);
+                echo 'View not provided.';
+            }
+            ?>
         </div>
     </main>
 

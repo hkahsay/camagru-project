@@ -29,6 +29,74 @@
         </aside>
     </div>
 
+    <section class="form-section" aria-labelledby="register-title">
+        <h2 id="register-title">Secure registration form</h2>
+
+        <?php if (!empty($success)): ?>
+            <p class="form-success"><?= e($success) ?></p>
+        <?php endif; ?>
+
+        <form action="/register" method="post">
+            <?= Csrf::field() ?>
+
+            <div class="form-grid">
+                <label>
+                    <span>Username</span>
+                    <input
+                        type="text"
+                        name="username"
+                        value="<?= old('username', $old ?? []) ?>"
+                        minlength="3"
+                        maxlength="30"
+                        autocomplete="username"
+                        required
+                    >
+                    <?= errorFor('username', $errors ?? []) ?>
+                </label>
+
+                <label>
+                    <span>Email</span>
+                    <input
+                        type="email"
+                        name="email"
+                        value="<?= old('email', $old ?? []) ?>"
+                        autocomplete="email"
+                        required
+                    >
+                    <?= errorFor('email', $errors ?? []) ?>
+                </label>
+
+                <label>
+                    <span>Password</span>
+                    <input
+                        type="password"
+                        name="password"
+                        minlength="8"
+                        maxlength="72"
+                        autocomplete="new-password"
+                        required
+                    >
+                    <?= errorFor('password', $errors ?? []) ?>
+                </label>
+
+                <label>
+                    <span>Confirm password</span>
+                    <input
+                        type="password"
+                        name="password_confirm"
+                        minlength="8"
+                        maxlength="72"
+                        autocomplete="new-password"
+                        required
+                    >
+                    <?= errorFor('password_confirm', $errors ?? []) ?>
+                </label>
+            </div>
+
+            <button type="submit">Create account</button>
+        </form>
+    </section>
+
     <section id="gallery" class="gallery-section" aria-labelledby="saved-title">
         <h2 id="saved-title">Gallery</h2>
         <p>Saved photos will appear here when the image workflow is connected.</p>
