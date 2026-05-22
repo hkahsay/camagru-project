@@ -32,6 +32,24 @@ final class Validator
         return $this;
     }
 
+    public function username(string $field, string $label): self
+    {
+        $value = $this->value($field);
+
+        if ($value !== '' && !preg_match('/^[A-Za-z0-9_]+$/', $value)) {
+            $this->errors[$field][] = $label . ' may contain only letters, numbers, and underscores.';
+        }
+
+        return $this;
+    }
+
+    public function addError(string $field, string $message): self
+    {
+        $this->errors[$field][] = $message;
+
+        return $this;
+    }
+
     public function length(string $field, string $label, int $min, int $max): self
     {
         $length = mb_strlen($this->value($field));

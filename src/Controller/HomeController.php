@@ -36,6 +36,7 @@ final class HomeController
         $validator = (new Validator($_POST))
             ->required('username', 'Username')
             ->length('username', 'Username', 3, 30)
+            ->username('username', 'Username')
             ->required('email', 'Email')
             ->email('email', 'Email')
             ->required('password', 'Password')
@@ -53,6 +54,28 @@ final class HomeController
             Response::redirect('/');
         }
 
+        $users = new UserRepository();
+        $username = $validator->value('username');
+        $email = $validator->value('email');
+
+        if ($users->existsByUsername($username)) {
+            $validator->addError('username', 'This username is already taken.');
+        }
+
+        if ($users->existsByEmail($email)) {
+            $validator->addError('email', 'This email address is already registered.');
+        }
+
+        if (!$validator->passes()) {
+            $_SESSION['errors'] = $validator->errors();
+            $_SESSION['old'] = [
+                'username' => $username,
+                'email' => $email,
+            ];
+
+            Response::redirect('/');
+        }
+
         $passwordHash = password_hash($validator->value('password'), PASSWORD_DEFAULT);
 
         if (!is_string($passwordHash)) {
@@ -63,7 +86,21 @@ final class HomeController
             Response::redirect('/');
         }
 
-        $_SESSION['success'] = 'Registration data passed validation. Password would be stored as a hash.';
+        try {
+            $users->create($username, $email, $passwordHash);
+        } catch (PDOException) {
+            $_SESSION['errors'] = [
+                'email' => ['Could not create the account with these details.'],
+            ];
+            $_SESSION['old'] = [
+                'username' => $username,
+                'email' => $email,
+            ];
+
+            Response::redirect('/');
+        }
+
+        $_SESSION['success'] = 'Account created successfully. You can now sign in when the login page is added.';
 
         Response::redirect('/');
     }

@@ -30,7 +30,7 @@
     </div>
 
     <section class="form-section" aria-labelledby="register-title">
-        <h2 id="register-title">Secure registration form</h2>
+        <h2 id="register-title">Create your account</h2>
 
         <?php if (!empty($success)): ?>
             <p class="form-success"><?= e($success) ?></p>
@@ -48,6 +48,7 @@
                         value="<?= old('username', $old ?? []) ?>"
                         minlength="3"
                         maxlength="30"
+                        pattern="[A-Za-z0-9_]+"
                         autocomplete="username"
                         required
                     >
@@ -73,6 +74,7 @@
                         name="password"
                         minlength="8"
                         maxlength="72"
+                        pattern="(?=.*[A-Za-z])(?=.*\d).{8,72}"
                         autocomplete="new-password"
                         required
                     >
@@ -86,6 +88,7 @@
                         name="password_confirm"
                         minlength="8"
                         maxlength="72"
+                        pattern="(?=.*[A-Za-z])(?=.*\d).{8,72}"
                         autocomplete="new-password"
                         required
                     >
