@@ -26,27 +26,13 @@ final class Database
         return self::$connection;
     }
 
-    public static function serverConnection(): PDO
+    private static function dsn(array $config): string
     {
-        $config = require BASE_PATH . '/config/database.php';
-
-        return new PDO(
-            self::dsn($config, false),
-            $config['user'],
-            $config['password'],
-            $config['options']
-        );
-    }
-
-    private static function dsn(array $config, bool $withDatabase = true): string
-    {
-        $database = $withDatabase ? ';dbname=' . $config['database'] : '';
-
         return sprintf(
-            'mysql:host=%s;port=%d%s;charset=%s',
+            'mysql:host=%s;port=%d;dbname=%s;charset=%s',
             $config['host'],
             $config['port'],
-            $database,
+            $config['database'],
             $config['charset']
         );
     }
