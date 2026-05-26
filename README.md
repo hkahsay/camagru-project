@@ -1,9 +1,26 @@
-# camagru-her
 # Camagru
+
+## Docker
+
+Start the full stack with one command:
+
+```sh
+cp .env.example .env
+docker compose up --build
+```
+
+This starts Nginx, PHP-FPM, MySQL, and runs the database setup automatically.
+
+Open the site at:
+
+```text
+http://localhost:8080
+```
 
 ## Database setup
 
-Edit the connection settings in `config/database.php`, then run:
+For local non-Docker development, edit the connection settings in
+`config/database.php`, then run:
 
 ```sh
 php config/setup.php
