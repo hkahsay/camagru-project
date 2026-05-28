@@ -12,4 +12,9 @@ if ($path === '/register') {
     return;
 }
 
+if ($path === '/verify-email') {
+    $controller->verifyEmail();
+    return;
+}
+
 $controller->index();

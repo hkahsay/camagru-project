@@ -21,6 +21,31 @@ final class HomeController
         unset($_SESSION['old'], $_SESSION['errors'], $_SESSION['success']);
     }
 
+    public function verifyEmail(): void
+    {
+        $token = $_GET['token'] ?? '';
+
+        if (!is_string($token) || !preg_match('/^[a-f0-9]{64}$/', $token)) {
+            $_SESSION['errors'] = [
+                'verification' => ['The confirmation link is invalid or expired.'],
+            ];
+
+            Response::redirect('/');
+        }
+
+        if (!(new UserRepository())->verifyEmail($token)) {
+            $_SESSION['errors'] = [
+                'verification' => ['The confirmation link is invalid or expired.'],
+            ];
+
+            Response::redirect('/');
+        }
+
+        $_SESSION['success'] = 'Your account has been confirmed. You can sign in when the login page is added.';
+
+        Response::redirect('/');
+    }
+
     public function register(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -86,8 +111,17 @@ final class HomeController
             Response::redirect('/');
         }
 
+        $verificationToken = EmailVerificationToken::generate();
+        $verificationUrl = AppUrl::to('/verify-email?token=' . $verificationToken);
+
         try {
-            $users->create($username, $email, $passwordHash);
+            $users->create(
+                $username,
+                $email,
+                $passwordHash,
+                EmailVerificationToken::hash($verificationToken),
+                EmailVerificationToken::expiresAt()
+            );
         } catch (PDOException) {
             $_SESSION['errors'] = [
                 'email' => ['Could not create the account with these details.'],
@@ -100,7 +134,9 @@ final class HomeController
             Response::redirect('/');
         }
 
-        $_SESSION['success'] = 'Account created successfully. You can now sign in when the login page is added.';
+        (new Mailer())->sendEmailConfirmation($email, $username, $verificationUrl);
+
+        $_SESSION['success'] = 'Account created. Check your email to confirm your account before signing in.';
 
         Response::redirect('/');
     }

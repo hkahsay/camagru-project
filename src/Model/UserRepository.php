@@ -14,7 +14,13 @@ final class UserRepository
         return $this->exists('email_normalized', self::normalize($email));
     }
 
-    public function create(string $username, string $email, string $passwordHash): int
+    public function create(
+        string $username,
+        string $email,
+        string $passwordHash,
+        string $verificationTokenHash,
+        string $verificationExpiresAt
+    ): int
     {
         $statement = Database::connection()->prepare(
             'INSERT INTO users (
@@ -23,6 +29,8 @@ final class UserRepository
                 email,
                 email_normalized,
                 password_hash,
+                verification_token_hash,
+                verification_expires_at,
                 created_at
             ) VALUES (
                 :username,
@@ -30,6 +38,8 @@ final class UserRepository
                 :email,
                 :email_normalized,
                 :password_hash,
+                :verification_token_hash,
+                :verification_expires_at,
                 :created_at
             )'
         );
@@ -40,10 +50,47 @@ final class UserRepository
             'email' => $email,
             'email_normalized' => self::normalize($email),
             'password_hash' => $passwordHash,
+            'verification_token_hash' => $verificationTokenHash,
+            'verification_expires_at' => $verificationExpiresAt,
             'created_at' => gmdate('Y-m-d H:i:s'),
         ]);
 
         return (int) Database::connection()->lastInsertId();
+    }
+
+    public function verifyEmail(string $token): bool
+    {
+        $statement = Database::connection()->prepare(
+            'SELECT id, verification_expires_at
+            FROM users
+            WHERE verification_token_hash = :token_hash
+            AND email_verified_at IS NULL
+            LIMIT 1'
+        );
+        $statement->execute([
+            'token_hash' => EmailVerificationToken::hash($token),
+        ]);
+
+        $user = $statement->fetch();
+
+        if ($user === false || strtotime((string) $user['verification_expires_at']) < time()) {
+            return false;
+        }
+
+        $update = Database::connection()->prepare(
+            'UPDATE users
+            SET email_verified_at = :verified_at,
+                verification_token_hash = NULL,
+                verification_expires_at = NULL
+            WHERE id = :id'
+        );
+
+        $update->execute([
+            'verified_at' => gmdate('Y-m-d H:i:s'),
+            'id' => $user['id'],
+        ]);
+
+        return $update->rowCount() === 1;
     }
 
     private function exists(string $column, string $value): bool

@@ -5,6 +5,8 @@ x-php-environment: &php-environment
   DB_USER: ${DB_USER:-camagru}
   DB_PASSWORD: ${DB_PASSWORD}
   DB_CHARSET: ${DB_CHARSET:-utf8mb4}
+  APP_URL: ${APP_URL:-http://localhost:8080}
+  MAIL_DRIVER: ${MAIL_DRIVER:-log}
 
 services:
   nginx:

@@ -36,6 +36,8 @@
             <p class="form-success"><?= e($success) ?></p>
         <?php endif; ?>
 
+        <?= errorFor('verification', $errors ?? []) ?>
+
         <form action="/register" method="post">
             <?= Csrf::field() ?>
 

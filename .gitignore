@@ -3,5 +3,6 @@
 !.env.example
 storage/*.sqlite
 storage/*.sqlite-*
+storage/mail.log
 storage/uploads/*
 !storage/uploads/.gitkeep
