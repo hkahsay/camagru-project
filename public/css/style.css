@@ -66,7 +66,12 @@ a {
     gap: 8px;
 }
 
-.site-nav a {
+.site-nav form {
+    margin: 0;
+}
+
+.site-nav a,
+.nav-button {
     border-radius: 6px;
     padding: 10px 12px;
     color: var(--muted);
@@ -74,9 +79,16 @@ a {
 }
 
 .site-nav a:hover,
-.site-nav a:focus-visible {
+.site-nav a:focus-visible,
+.nav-button:hover,
+.nav-button:focus-visible {
     background: var(--surface-muted);
     color: var(--text);
+}
+
+.nav-button {
+    min-height: auto;
+    background: transparent;
 }
 
 .site-main {
@@ -84,11 +96,13 @@ a {
     padding: 40px 0;
 }
 
+.auth-page,
 .camera-page {
     display: grid;
     gap: 28px;
 }
 
+.auth-intro,
 .camera-intro {
     max-width: 680px;
 }
@@ -128,6 +142,13 @@ h2 {
 .camera-layout {
     display: grid;
     grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.auth-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 24px;
     align-items: start;
 }
@@ -237,6 +258,10 @@ button:disabled {
     gap: 16px;
 }
 
+.form-grid.single-column {
+    grid-template-columns: 1fr;
+}
+
 label {
     display: grid;
     gap: 8px;
@@ -307,9 +332,15 @@ input:focus {
         width: 100%;
     }
 
-    .site-nav a {
+    .site-nav a,
+    .site-nav form,
+    .nav-button {
         flex: 1;
         text-align: center;
+    }
+
+    .site-nav a,
+    .nav-button {
         background: var(--surface-muted);
     }
 
@@ -325,6 +356,7 @@ input:focus {
         font-size: 16px;
     }
 
+    .auth-layout,
     .camera-layout {
         grid-template-columns: 1fr;
     }

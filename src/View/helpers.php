@@ -9,7 +9,11 @@ function e(string $value): string
 
 function asset(string $path): string
 {
-    return '/' . ltrim($path, '/');
+    $path = ltrim($path, '/');
+    $publicPath = PUBLIC_PATH . '/' . $path;
+    $version = is_file($publicPath) ? '?v=' . filemtime($publicPath) : '';
+
+    return '/' . $path . $version;
 }
 
 function old(string $field, array $old = []): string

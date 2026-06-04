@@ -5,7 +5,14 @@
         <?php if (!empty($navItems)): ?>
             <nav class="site-nav" aria-label="Primary navigation">
                 <?php foreach ($navItems as $item): ?>
-                    <a href="<?= e($item['href']) ?>"><?= e($item['label']) ?></a>
+                    <?php if ($item['href'] === '/logout'): ?>
+                        <form action="/logout" method="post">
+                            <?= Csrf::field() ?>
+                            <button class="nav-button" type="submit"><?= e($item['label']) ?></button>
+                        </form>
+                    <?php else: ?>
+                        <a href="<?= e($item['href']) ?>"><?= e($item['label']) ?></a>
+                    <?php endif; ?>
                 <?php endforeach; ?>
             </nav>
         <?php endif; ?>

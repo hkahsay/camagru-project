@@ -6,16 +6,20 @@ final class HomeController
 {
     public function index(): void
     {
+        $user = $_SESSION['user'] ?? null;
+
         render('home', [
-            'title' => 'Camagru Webcam Preview',
-            'navItems' => [
-                ['label' => 'Camera', 'href' => '/'],
+            'title' => $user === null ? 'Camagru Login' : 'Camagru Camera',
+            'navItems' => $user === null ? [] : [
+                ['label' => 'Camera', 'href' => '#camera'],
                 ['label' => 'Gallery', 'href' => '#gallery'],
+                ['label' => 'Logout', 'href' => '/logout'],
             ],
             'scripts' => ['/js/app.js'],
             'old' => $_SESSION['old'] ?? [],
             'errors' => $_SESSION['errors'] ?? [],
             'success' => $_SESSION['success'] ?? '',
+            'user' => $user,
         ]);
 
         unset($_SESSION['old'], $_SESSION['errors'], $_SESSION['success']);
@@ -41,7 +45,86 @@ final class HomeController
             Response::redirect('/');
         }
 
-        $_SESSION['success'] = 'Your account has been confirmed. You can sign in when the login page is added.';
+        $_SESSION['success'] = 'Your account has been confirmed. You can now log in.';
+
+        Response::redirect('/');
+    }
+
+    public function login(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            Response::redirect('/');
+        }
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            http_response_code(419);
+            echo 'Invalid security token.';
+            return;
+        }
+
+        $validator = (new Validator($_POST))
+            ->required('login', 'Username or email')
+            ->length('login', 'Username or email', 3, 190)
+            ->required('login_password', 'Password');
+
+        if (!$validator->passes()) {
+            $_SESSION['errors'] = $validator->errors();
+            $_SESSION['old'] = [
+                'login' => $validator->value('login'),
+            ];
+
+            Response::redirect('/');
+        }
+
+        $user = (new UserRepository())->findByLogin($validator->value('login'));
+
+        if ($user === null || !password_verify($validator->value('login_password'), (string) $user['password_hash'])) {
+            $_SESSION['errors'] = [
+                'login' => ['These credentials do not match our records.'],
+            ];
+            $_SESSION['old'] = [
+                'login' => $validator->value('login'),
+            ];
+
+            Response::redirect('/');
+        }
+
+        if ($user['email_verified_at'] === null) {
+            $_SESSION['errors'] = [
+                'login' => ['Please confirm your email before signing in.'],
+            ];
+            $_SESSION['old'] = [
+                'login' => $validator->value('login'),
+            ];
+
+            Response::redirect('/');
+        }
+
+        session_regenerate_id(true);
+
+        $_SESSION['user'] = [
+            'id' => (int) $user['id'],
+            'username' => (string) $user['username'],
+            'email' => (string) $user['email'],
+        ];
+
+        Response::redirect('/');
+    }
+
+    public function logout(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            Response::redirect('/');
+        }
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            http_response_code(419);
+            echo 'Invalid security token.';
+            return;
+        }
+
+        unset($_SESSION['user']);
+        session_regenerate_id(true);
 
         Response::redirect('/');
     }
@@ -136,7 +219,7 @@ final class HomeController
 
         (new Mailer())->sendEmailConfirmation($email, $username, $verificationUrl);
 
-        $_SESSION['success'] = 'Account created. Check your email to confirm your account before signing in.';
+        $_SESSION['success'] = 'Account created. We sent a confirmation link to your email address. Confirm it before signing in.';
 
         Response::redirect('/');
     }

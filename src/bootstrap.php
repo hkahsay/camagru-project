@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 define('BASE_PATH', dirname(__DIR__));
 define('SRC_PATH', BASE_PATH . '/src');
+define('PUBLIC_PATH', BASE_PATH . '/public');
 define('VIEW_PATH', SRC_PATH . '/View');
 define('STORAGE_PATH', BASE_PATH . '/storage');
 define('UPLOAD_PATH', STORAGE_PATH . '/uploads');

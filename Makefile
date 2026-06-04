@@ -7,6 +7,9 @@ all: start_prod
 build:
 	$(DOCKER) build
 
+test:
+	php tests/run.php
+
 start_prod:
 	$(DOCKER) up -d --build
 
@@ -49,4 +52,4 @@ clean: down
 re: clean all
 
 
-.PHONY: all build start_prod setup migrate ps logs logsnginx logssetup restart restart_nginx stop stop_prod down clean re
+.PHONY: all build test start_prod setup migrate ps logs logsnginx logssetup restart restart_nginx stop stop_prod down clean re

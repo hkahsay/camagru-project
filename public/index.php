@@ -12,6 +12,16 @@ if ($path === '/register') {
     return;
 }
 
+if ($path === '/login') {
+    $controller->login();
+    return;
+}
+
+if ($path === '/logout') {
+    $controller->logout();
+    return;
+}
+
 if ($path === '/verify-email') {
     $controller->verifyEmail();
     return;

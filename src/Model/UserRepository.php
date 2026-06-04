@@ -14,6 +14,26 @@ final class UserRepository
         return $this->exists('email_normalized', self::normalize($email));
     }
 
+    public function findByLogin(string $login): ?array
+    {
+        $statement = Database::connection()->prepare(
+            'SELECT id, username, email, password_hash, email_verified_at
+            FROM users
+            WHERE username_normalized = :username_login
+            OR email_normalized = :email_login
+            LIMIT 1'
+        );
+        $normalizedLogin = self::normalize($login);
+        $statement->execute([
+            'username_login' => $normalizedLogin,
+            'email_login' => $normalizedLogin,
+        ]);
+
+        $user = $statement->fetch();
+
+        return $user === false ? null : $user;
+    }
+
     public function create(
         string $username,
         string $email,

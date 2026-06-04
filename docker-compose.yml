@@ -7,6 +7,12 @@ x-php-environment: &php-environment
   DB_CHARSET: ${DB_CHARSET:-utf8mb4}
   APP_URL: ${APP_URL:-http://localhost:8080}
   MAIL_DRIVER: ${MAIL_DRIVER:-log}
+  SMTP_HOST: ${SMTP_HOST:-mailpit}
+  SMTP_PORT: ${SMTP_PORT:-1025}
+  SMTP_USERNAME: ${SMTP_USERNAME:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  SMTP_ENCRYPTION: ${SMTP_ENCRYPTION:-}
+  MAIL_FROM: ${MAIL_FROM:-no-reply@camagru.local}
 
 services:
   nginx:
@@ -62,6 +68,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "${MAILPIT_HOST_PORT:-8025}:8025"
 
 volumes:
   app_storage:
