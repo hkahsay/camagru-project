@@ -14,8 +14,10 @@
 
         <div class="auth-layout">
             <section class="form-section" aria-labelledby="login-title">
-                <h2 id="login-title">Login</h2>
-                <a class="form-link" href="/forgot">Forgot password?</a>
+                <div class="form-section-header">
+                    <h2 id="login-title">Login</h2>
+                    <a class="form-link" href="/forgot">Forgot password?</a>
+                </div>
 
                 <form action="/login" method="post">
                     <?= Csrf::field() ?>

@@ -13,6 +13,7 @@ final class HomeController
             'navItems' => $user === null ? [] : [
                 ['label' => 'Camera', 'href' => '#camera'],
                 ['label' => 'Gallery', 'href' => '#gallery'],
+                ['label' => 'Account', 'href' => '/account'],
                 ['label' => 'Logout', 'href' => '/logout'],
             ],
             'scripts' => ['/js/app.js'],
@@ -48,6 +49,180 @@ final class HomeController
         $_SESSION['success'] = 'Your account has been confirmed. You can now log in.';
 
         Response::redirect('/');
+    }
+
+    public function account(): void
+    {
+        $sessionUser = $this->requireUser();
+        $user = (new UserRepository())->findById((int) $sessionUser['id']);
+
+        if ($user === null) {
+            unset($_SESSION['user']);
+            Response::redirect('/');
+        }
+
+        render('account', [
+            'title' => 'Account Settings',
+            'navItems' => [
+                ['label' => 'Camera', 'href' => '/#camera'],
+                ['label' => 'Gallery', 'href' => '/#gallery'],
+                ['label' => 'Account', 'href' => '/account'],
+                ['label' => 'Logout', 'href' => '/logout'],
+            ],
+            'old' => $_SESSION['old'] ?? [
+                'username' => (string) $user['username'],
+                'email' => (string) $user['email'],
+            ],
+            'errors' => $_SESSION['errors'] ?? [],
+            'success' => $_SESSION['success'] ?? '',
+            'user' => $user,
+        ]);
+
+        unset($_SESSION['old'], $_SESSION['errors'], $_SESSION['success']);
+    }
+
+    public function updateAccount(): void
+    {
+        $sessionUser = $this->requireUser();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            Response::redirect('/account');
+        }
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            http_response_code(419);
+            echo 'Invalid security token.';
+            return;
+        }
+
+        $users = new UserRepository();
+        $currentUser = $users->findById((int) $sessionUser['id']);
+
+        if ($currentUser === null) {
+            unset($_SESSION['user']);
+            Response::redirect('/');
+        }
+
+        $validator = (new Validator($_POST))
+            ->required('username', 'Username')
+            ->length('username', 'Username', 3, 30)
+            ->username('username', 'Username')
+            ->required('email', 'Email')
+            ->email('email', 'Email');
+
+        $username = $validator->value('username');
+        $email = $validator->value('email');
+
+        if ($users->existsByUsernameExcept($username, (int) $currentUser['id'])) {
+            $validator->addError('username', 'This username is already taken.');
+        }
+
+        if ($users->existsByEmailExcept($email, (int) $currentUser['id'])) {
+            $validator->addError('email', 'This email address is already registered.');
+        }
+
+        if (!$validator->passes()) {
+            $_SESSION['errors'] = $validator->errors();
+            $_SESSION['old'] = [
+                'username' => $username,
+                'email' => $email,
+            ];
+
+            Response::redirect('/account');
+        }
+
+        $emailChanged = mb_strtolower(trim($email)) !== mb_strtolower(trim((string) $currentUser['email']));
+        $verificationTokenHash = null;
+        $verificationExpiresAt = null;
+
+        if ($emailChanged) {
+            $verificationToken = EmailVerificationToken::generate();
+            $verificationTokenHash = EmailVerificationToken::hash($verificationToken);
+            $verificationExpiresAt = EmailVerificationToken::expiresAt();
+        }
+
+        $users->updateProfile(
+            (int) $currentUser['id'],
+            $username,
+            $email,
+            $emailChanged,
+            $verificationTokenHash,
+            $verificationExpiresAt
+        );
+
+        $_SESSION['user'] = [
+            'id' => (int) $currentUser['id'],
+            'username' => $username,
+            'email' => $email,
+        ];
+
+        if ($emailChanged) {
+            (new Mailer())->sendEmailConfirmation(
+                $email,
+                $username,
+                AppUrl::to('/verify-email?token=' . $verificationToken)
+            );
+
+            $_SESSION['success'] = 'Account updated. We sent a confirmation link to your new email address.';
+        } else {
+            $_SESSION['success'] = 'Account updated.';
+        }
+
+        Response::redirect('/account');
+    }
+
+    public function updatePassword(): void
+    {
+        $sessionUser = $this->requireUser();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            Response::redirect('/account');
+        }
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            http_response_code(419);
+            echo 'Invalid security token.';
+            return;
+        }
+
+        $users = new UserRepository();
+        $currentUser = $users->findById((int) $sessionUser['id']);
+
+        if ($currentUser === null) {
+            unset($_SESSION['user']);
+            Response::redirect('/');
+        }
+
+        $validator = (new Validator($_POST))
+            ->required('current_password', 'Current password')
+            ->required('password', 'New password')
+            ->password('password', 'New password')
+            ->required('password_confirm', 'Password confirmation')
+            ->matches('password_confirm', 'password', 'Password confirmation');
+
+        if (!password_verify($validator->value('current_password'), (string) $currentUser['password_hash'])) {
+            $validator->addError('current_password', 'The current password is incorrect.');
+        }
+
+        if (!$validator->passes()) {
+            $_SESSION['errors'] = $validator->errors();
+
+            Response::redirect('/account');
+        }
+
+        $passwordHash = password_hash($validator->value('password'), PASSWORD_DEFAULT);
+
+        if (!is_string($passwordHash) || !$users->updatePassword((int) $currentUser['id'], $passwordHash)) {
+            $_SESSION['errors'] = [
+                'password' => ['Could not update the password. Please try again.'],
+            ];
+
+            Response::redirect('/account');
+        }
+
+        $_SESSION['success'] = 'Password updated.';
+
+        Response::redirect('/account');
     }
 
     public function login(): void
@@ -360,5 +535,16 @@ final class HomeController
         $_SESSION['success'] = 'Account created. We sent a confirmation link to your email address. Confirm it before signing in.';
 
         Response::redirect('/');
+    }
+
+    private function requireUser(): array
+    {
+        $user = $_SESSION['user'] ?? null;
+
+        if (!is_array($user) || empty($user['id'])) {
+            Response::redirect('/');
+        }
+
+        return $user;
     }
 }

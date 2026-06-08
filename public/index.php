@@ -27,6 +27,21 @@ if ($path === '/reset-password') {
     return;
 }
 
+if ($path === '/account') {
+    $controller->account();
+    return;
+}
+
+if ($path === '/account/profile') {
+    $controller->updateAccount();
+    return;
+}
+
+if ($path === '/account/password') {
+    $controller->updatePassword();
+    return;
+}
+
 if ($path === '/logout') {
     $controller->logout();
     return;

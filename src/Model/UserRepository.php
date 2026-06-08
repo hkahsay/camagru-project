@@ -14,6 +14,33 @@ final class UserRepository
         return $this->exists('email_normalized', self::normalize($email));
     }
 
+    public function existsByUsernameExcept(string $username, int $userId): bool
+    {
+        return $this->existsExcept('username_normalized', self::normalize($username), $userId);
+    }
+
+    public function existsByEmailExcept(string $email, int $userId): bool
+    {
+        return $this->existsExcept('email_normalized', self::normalize($email), $userId);
+    }
+
+    public function findById(int $id): ?array
+    {
+        $statement = Database::connection()->prepare(
+            'SELECT id, username, email, password_hash, email_verified_at
+            FROM users
+            WHERE id = :id
+            LIMIT 1'
+        );
+        $statement->execute([
+            'id' => $id,
+        ]);
+
+        $user = $statement->fetch();
+
+        return $user === false ? null : $user;
+    }
+
     public function findByLogin(string $login): ?array
     {
         $statement = Database::connection()->prepare(
@@ -193,6 +220,78 @@ final class UserRepository
         return $statement->rowCount() === 1;
     }
 
+    public function updateProfile(
+        int $userId,
+        string $username,
+        string $email,
+        bool $emailChanged,
+        ?string $verificationTokenHash,
+        ?string $verificationExpiresAt
+    ): bool {
+        if ($emailChanged) {
+            $statement = Database::connection()->prepare(
+                'UPDATE users
+                SET username = :username,
+                    username_normalized = :username_normalized,
+                    email = :email,
+                    email_normalized = :email_normalized,
+                    email_verified_at = NULL,
+                    verification_token_hash = :verification_token_hash,
+                    verification_expires_at = :verification_expires_at
+                WHERE id = :id'
+            );
+
+            $statement->execute([
+                'username' => $username,
+                'username_normalized' => self::normalize($username),
+                'email' => $email,
+                'email_normalized' => self::normalize($email),
+                'verification_token_hash' => $verificationTokenHash,
+                'verification_expires_at' => $verificationExpiresAt,
+                'id' => $userId,
+            ]);
+
+            return $statement->rowCount() === 1;
+        }
+
+        $statement = Database::connection()->prepare(
+            'UPDATE users
+            SET username = :username,
+                username_normalized = :username_normalized,
+                email = :email,
+                email_normalized = :email_normalized
+            WHERE id = :id'
+        );
+
+        $statement->execute([
+            'username' => $username,
+            'username_normalized' => self::normalize($username),
+            'email' => $email,
+            'email_normalized' => self::normalize($email),
+            'id' => $userId,
+        ]);
+
+        return $statement->rowCount() <= 1;
+    }
+
+    public function updatePassword(int $userId, string $passwordHash): bool
+    {
+        $statement = Database::connection()->prepare(
+            'UPDATE users
+            SET password_hash = :password_hash,
+                password_reset_token_hash = NULL,
+                password_reset_expires_at = NULL
+            WHERE id = :id'
+        );
+
+        $statement->execute([
+            'password_hash' => $passwordHash,
+            'id' => $userId,
+        ]);
+
+        return $statement->rowCount() === 1;
+    }
+
     private function exists(string $column, string $value): bool
     {
         $allowedColumns = ['username_normalized', 'email_normalized'];
@@ -205,6 +304,28 @@ final class UserRepository
             'SELECT 1 FROM users WHERE ' . $column . ' = :value LIMIT 1'
         );
         $statement->execute(['value' => $value]);
+
+        return $statement->fetchColumn() !== false;
+    }
+
+    private function existsExcept(string $column, string $value, int $userId): bool
+    {
+        $allowedColumns = ['username_normalized', 'email_normalized'];
+
+        if (!in_array($column, $allowedColumns, true)) {
+            throw new InvalidArgumentException('Invalid user lookup column.');
+        }
+
+        $statement = Database::connection()->prepare(
+            'SELECT 1 FROM users
+            WHERE ' . $column . ' = :value
+            AND id != :id
+            LIMIT 1'
+        );
+        $statement->execute([
+            'value' => $value,
+            'id' => $userId,
+        ]);
 
         return $statement->fetchColumn() !== false;
     }

@@ -6,7 +6,7 @@
     --text: #17202a;
     --muted: #5b6778;
     --border: #cfd8e3;
-    --primary: #2563eb;
+    --primary: #159e95;
     --primary-hover: #1d4ed8;
     --secondary: #475569;
     --secondary-hover: #334155;
@@ -97,7 +97,8 @@ a {
 }
 
 .auth-page,
-.camera-page {
+.camera-page,
+.account-page {
     display: grid;
     gap: 28px;
 }
@@ -153,6 +154,13 @@ h2 {
 .auth-layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.account-layout {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 24px;
     align-items: start;
 }
@@ -256,11 +264,24 @@ button:disabled {
     gap: 18px;
 }
 
+.form-section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.form-section-header h2 {
+    margin-bottom: 0;
+}
+
 .form-link {
     display: inline-flex;
     width: fit-content;
     color: var(--primary);
     font-weight: 700;
+    text-align: right;
 }
 
 .form-link:hover,
@@ -319,6 +340,16 @@ input:focus {
     font-weight: 700;
 }
 
+.form-note {
+    margin: 0;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    padding: 12px;
+    color: #854d0e;
+    background: #fffbeb;
+    font-weight: 700;
+}
+
 .site-footer {
     border-top: 1px solid var(--border);
     background: var(--surface);
@@ -374,6 +405,7 @@ input:focus {
     }
 
     .auth-layout,
+    .account-layout,
     .camera-layout {
         grid-template-columns: 1fr;
     }
