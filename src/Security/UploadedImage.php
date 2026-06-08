@@ -55,6 +55,53 @@ final class UploadedImage
         ];
     }
 
+    public static function storeDataUrl(string $dataUrl): array
+    {
+        if (!preg_match('/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/', $dataUrl, $matches)) {
+            return ['ok' => false, 'error' => 'Image data is invalid.'];
+        }
+
+        $mimeType = $matches[1];
+        $imageData = base64_decode($matches[2], true);
+
+        if ($imageData === false) {
+            return ['ok' => false, 'error' => 'Image data is invalid.'];
+        }
+
+        if (strlen($imageData) > self::MAX_BYTES) {
+            return ['ok' => false, 'error' => 'Image must be 2MB or smaller.'];
+        }
+
+        if (!is_dir(UPLOAD_PATH)) {
+            mkdir(UPLOAD_PATH, 0755, true);
+        }
+
+        $temporaryPath = tempnam(UPLOAD_PATH, 'camagru-');
+
+        if ($temporaryPath === false || file_put_contents($temporaryPath, $imageData, LOCK_EX) === false) {
+            return ['ok' => false, 'error' => 'Could not save the image.'];
+        }
+
+        if (getimagesize($temporaryPath) === false) {
+            unlink($temporaryPath);
+            return ['ok' => false, 'error' => 'The image data is not a valid image.'];
+        }
+
+        $fileName = bin2hex(random_bytes(16)) . '.' . self::EXTENSIONS[$mimeType];
+        $targetPath = UPLOAD_PATH . '/' . $fileName;
+
+        if (!rename($temporaryPath, $targetPath)) {
+            unlink($temporaryPath);
+            return ['ok' => false, 'error' => 'Could not save the image.'];
+        }
+
+        return [
+            'ok' => true,
+            'path' => $targetPath,
+            'fileName' => $fileName,
+        ];
+    }
+
     private static function mimeType(string $path): string
     {
         $fileInfo = new finfo(FILEINFO_MIME_TYPE);

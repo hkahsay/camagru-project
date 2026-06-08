@@ -10,9 +10,11 @@ final class HomeController
 
         render('home', [
             'title' => $user === null ? 'Camagru Login' : 'Camagru Camera',
-            'navItems' => $user === null ? [] : [
+            'navItems' => $user === null ? [
+                ['label' => 'Gallery', 'href' => '/gallery'],
+            ] : [
                 ['label' => 'Camera', 'href' => '#camera'],
-                ['label' => 'Gallery', 'href' => '#gallery'],
+                ['label' => 'Gallery', 'href' => '/gallery'],
                 ['label' => 'Account', 'href' => '/account'],
                 ['label' => 'Logout', 'href' => '/logout'],
             ],
@@ -51,6 +53,192 @@ final class HomeController
         Response::redirect('/');
     }
 
+    public function gallery(): void
+    {
+        $sessionUser = $_SESSION['user'] ?? null;
+        $viewerId = is_array($sessionUser) && !empty($sessionUser['id']) ? (int) $sessionUser['id'] : null;
+        $imageRepository = new ImageRepository();
+        $images = $imageRepository->all($viewerId);
+
+        render('gallery', [
+            'title' => 'Camagru Gallery',
+            'navItems' => $sessionUser === null ? [
+                ['label' => 'Gallery', 'href' => '/gallery'],
+                ['label' => 'Login', 'href' => '/'],
+            ] : [
+                ['label' => 'Camera', 'href' => '/#camera'],
+                ['label' => 'Gallery', 'href' => '/gallery'],
+                ['label' => 'Account', 'href' => '/account'],
+                ['label' => 'Logout', 'href' => '/logout'],
+            ],
+            'images' => array_map(
+                static function (array $image) use ($imageRepository): array {
+                    $image['comments'] = $imageRepository->commentsFor((int) $image['id']);
+                    return $image;
+                },
+                $images
+            ),
+            'errors' => $_SESSION['errors'] ?? [],
+            'success' => $_SESSION['success'] ?? '',
+            'user' => $sessionUser,
+        ]);
+
+        unset($_SESSION['errors'], $_SESSION['success']);
+    }
+
+    public function likeImage(): void
+    {
+        $sessionUser = $this->requireUser();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            Response::redirect('/gallery');
+        }
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            http_response_code(419);
+            echo 'Invalid security token.';
+            return;
+        }
+
+        $imageId = (int) ($_POST['image_id'] ?? 0);
+        $images = new ImageRepository();
+
+        if ($imageId < 1 || $images->find($imageId) === null) {
+            $_SESSION['errors'] = [
+                'gallery' => ['This image is no longer available.'],
+            ];
+
+            Response::redirect('/gallery');
+        }
+
+        $images->toggleLike($imageId, (int) $sessionUser['id']);
+
+        Response::redirect('/gallery#image-' . $imageId);
+    }
+
+    public function commentImage(): void
+    {
+        $sessionUser = $this->requireUser();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            Response::redirect('/gallery');
+        }
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            http_response_code(419);
+            echo 'Invalid security token.';
+            return;
+        }
+
+        $imageId = (int) ($_POST['image_id'] ?? 0);
+        $images = new ImageRepository();
+
+        if ($imageId < 1 || $images->find($imageId) === null) {
+            $_SESSION['errors'] = [
+                'gallery' => ['This image is no longer available.'],
+            ];
+
+            Response::redirect('/gallery');
+        }
+
+        $validator = (new Validator($_POST))
+            ->required('comment', 'Comment')
+            ->length('comment', 'Comment', 1, 1000);
+
+        if (!$validator->passes()) {
+            $_SESSION['errors'] = $validator->errors();
+
+            Response::redirect('/gallery#image-' . $imageId);
+        }
+
+        $images->addComment($imageId, (int) $sessionUser['id'], $validator->value('comment'));
+
+        Response::redirect('/gallery#image-' . $imageId);
+    }
+
+    public function uploadImage(): void
+    {
+        $sessionUser = $this->requireUser();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            Response::json(['error' => 'Method not allowed.'], 405);
+        }
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Response::json(['error' => 'Invalid security token.'], 419);
+        }
+
+        $result = UploadedImage::store($_FILES['image'] ?? []);
+
+        if (!$result['ok']) {
+            Response::json(['error' => $result['error']], 422);
+        }
+
+        $imageId = (new ImageRepository())->create((int) $sessionUser['id'], (string) $result['fileName']);
+
+        Response::json([
+            'message' => 'Image uploaded successfully.',
+            'id' => $imageId,
+            'file' => $result['fileName'],
+        ], 201);
+    }
+
+    public function saveImage(): void
+    {
+        $sessionUser = $this->requireUser();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            Response::json(['error' => 'Method not allowed.'], 405);
+        }
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            Response::json(['error' => 'Invalid security token.'], 419);
+        }
+
+        $imageData = $_POST['image'] ?? '';
+
+        if (!is_string($imageData)) {
+            Response::json(['error' => 'Image data is invalid.'], 422);
+        }
+
+        $result = UploadedImage::storeDataUrl($imageData);
+
+        if (!$result['ok']) {
+            Response::json(['error' => $result['error']], 422);
+        }
+
+        $imageId = (new ImageRepository())->create((int) $sessionUser['id'], (string) $result['fileName']);
+
+        Response::json([
+            'message' => 'Image saved successfully.',
+            'id' => $imageId,
+            'file' => $result['fileName'],
+        ], 201);
+    }
+
+    public function serveUpload(string $fileName): void
+    {
+        if (!preg_match('/^[a-f0-9]{32}\.(?:jpg|png|webp)$/', $fileName)) {
+            http_response_code(404);
+            echo 'Image not found.';
+            return;
+        }
+
+        $path = UPLOAD_PATH . '/' . $fileName;
+
+        if (!is_file($path)) {
+            http_response_code(404);
+            echo 'Image not found.';
+            return;
+        }
+
+        $mimeType = (new finfo(FILEINFO_MIME_TYPE))->file($path) ?: 'application/octet-stream';
+        header('Content-Type: ' . $mimeType);
+        header('Content-Length: ' . filesize($path));
+        header('Cache-Control: public, max-age=31536000, immutable');
+        readfile($path);
+    }
+
     public function account(): void
     {
         $sessionUser = $this->requireUser();
@@ -65,7 +253,7 @@ final class HomeController
             'title' => 'Account Settings',
             'navItems' => [
                 ['label' => 'Camera', 'href' => '/#camera'],
-                ['label' => 'Gallery', 'href' => '/#gallery'],
+                ['label' => 'Gallery', 'href' => '/gallery'],
                 ['label' => 'Account', 'href' => '/account'],
                 ['label' => 'Logout', 'href' => '/logout'],
             ],

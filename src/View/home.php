@@ -155,7 +155,8 @@
 
         <section id="gallery" class="gallery-section" aria-labelledby="saved-title">
             <h2 id="saved-title">Gallery</h2>
-            <p>Saved photos will appear here when the image workflow is connected.</p>
+            <p>See the public gallery with images shared by all Camagru users.</p>
+            <a class="form-link" href="/gallery">Open gallery</a>
         </section>
     </section>
 <?php endif; ?>

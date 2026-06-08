@@ -17,6 +17,36 @@ if ($path === '/login') {
     return;
 }
 
+if ($path === '/gallery') {
+    $controller->gallery();
+    return;
+}
+
+if ($path === '/gallery/like') {
+    $controller->likeImage();
+    return;
+}
+
+if ($path === '/gallery/comment') {
+    $controller->commentImage();
+    return;
+}
+
+if ($path === '/upload') {
+    $controller->uploadImage();
+    return;
+}
+
+if ($path === '/save-image') {
+    $controller->saveImage();
+    return;
+}
+
+if (str_starts_with($path, '/uploads/')) {
+    $controller->serveUpload(basename($path));
+    return;
+}
+
 if ($path === '/forgot') {
     $controller->forgotPassword();
     return;

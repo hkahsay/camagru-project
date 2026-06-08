@@ -98,7 +98,8 @@ a {
 
 .auth-page,
 .camera-page,
-.account-page {
+.account-page,
+.gallery-page {
     display: grid;
     gap: 28px;
 }
@@ -259,6 +260,82 @@ button:disabled {
     line-height: 1.6;
 }
 
+.public-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+    align-items: start;
+}
+
+.gallery-card {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.gallery-card img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    background: #111827;
+}
+
+.gallery-card-body {
+    display: grid;
+    gap: 14px;
+    padding: 16px;
+}
+
+.gallery-card-meta,
+.gallery-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--muted);
+}
+
+.gallery-card-meta strong {
+    color: var(--text);
+}
+
+.gallery-card-meta time,
+.gallery-actions span {
+    font-size: 14px;
+}
+
+.gallery-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+}
+
+.gallery-actions form {
+    margin: 0;
+}
+
+.comments-list {
+    display: grid;
+    gap: 8px;
+}
+
+.comments-list p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+.comments-list strong {
+    color: var(--text);
+}
+
+.comment-form {
+    display: grid;
+    gap: 10px;
+}
+
 .form-section form {
     display: grid;
     gap: 18px;
@@ -406,7 +483,8 @@ input:focus {
 
     .auth-layout,
     .account-layout,
-    .camera-layout {
+    .camera-layout,
+    .public-gallery-grid {
         grid-template-columns: 1fr;
     }
 
