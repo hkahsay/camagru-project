@@ -34,6 +34,23 @@ final class UserRepository
         return $user === false ? null : $user;
     }
 
+    public function findByEmail(string $email): ?array
+    {
+        $statement = Database::connection()->prepare(
+            'SELECT id, username, email
+            FROM users
+            WHERE email_normalized = :email
+            LIMIT 1'
+        );
+        $statement->execute([
+            'email' => self::normalize($email),
+        ]);
+
+        $user = $statement->fetch();
+
+        return $user === false ? null : $user;
+    }
+
     public function create(
         string $username,
         string $email,
@@ -111,6 +128,69 @@ final class UserRepository
         ]);
 
         return $update->rowCount() === 1;
+    }
+
+    public function storePasswordResetToken(int $userId, string $tokenHash, string $expiresAt): bool
+    {
+        $statement = Database::connection()->prepare(
+            'UPDATE users
+            SET password_reset_token_hash = :token_hash,
+                password_reset_expires_at = :expires_at
+            WHERE id = :id'
+        );
+
+        $statement->execute([
+            'token_hash' => $tokenHash,
+            'expires_at' => $expiresAt,
+            'id' => $userId,
+        ]);
+
+        return $statement->rowCount() === 1;
+    }
+
+    public function findByPasswordResetToken(string $token): ?array
+    {
+        $statement = Database::connection()->prepare(
+            'SELECT id, username, email, password_reset_expires_at
+            FROM users
+            WHERE password_reset_token_hash = :token_hash
+            LIMIT 1'
+        );
+        $statement->execute([
+            'token_hash' => PasswordResetToken::hash($token),
+        ]);
+
+        $user = $statement->fetch();
+
+        if ($user === false || strtotime((string) $user['password_reset_expires_at']) < time()) {
+            return null;
+        }
+
+        return $user;
+    }
+
+    public function resetPassword(string $token, string $passwordHash): bool
+    {
+        $user = $this->findByPasswordResetToken($token);
+
+        if ($user === null) {
+            return false;
+        }
+
+        $statement = Database::connection()->prepare(
+            'UPDATE users
+            SET password_hash = :password_hash,
+                password_reset_token_hash = NULL,
+                password_reset_expires_at = NULL
+            WHERE id = :id'
+        );
+
+        $statement->execute([
+            'password_hash' => $passwordHash,
+            'id' => $user['id'],
+        ]);
+
+        return $statement->rowCount() === 1;
     }
 
     private function exists(string $column, string $value): bool

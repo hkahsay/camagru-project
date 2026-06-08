@@ -17,6 +17,16 @@ if ($path === '/login') {
     return;
 }
 
+if ($path === '/forgot') {
+    $controller->forgotPassword();
+    return;
+}
+
+if ($path === '/reset-password') {
+    $controller->resetPassword();
+    return;
+}
+
 if ($path === '/logout') {
     $controller->logout();
     return;

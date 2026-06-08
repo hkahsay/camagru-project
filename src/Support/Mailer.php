@@ -9,6 +9,19 @@ final class Mailer
         $subject = 'Confirm your Camagru account';
         $message = "Hello {$username},\n\nConfirm your Camagru account using this link:\n{$verificationUrl}\n\nThis link expires in 24 hours.\n";
 
+        $this->send($email, $subject, $message);
+    }
+
+    public function sendPasswordReset(string $email, string $username, string $resetUrl): void
+    {
+        $subject = 'Reset your Camagru password';
+        $message = "Hello {$username},\n\nReset your Camagru password using this link:\n{$resetUrl}\n\nThis link expires in 1 hour. If you did not request this, you can ignore this email.\n";
+
+        $this->send($email, $subject, $message);
+    }
+
+    private function send(string $email, string $subject, string $message): void
+    {
         if (getenv('MAIL_DRIVER') === 'smtp') {
             try {
                 $this->sendSmtp($email, $subject, $message);

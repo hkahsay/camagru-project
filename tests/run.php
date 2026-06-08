@@ -69,6 +69,17 @@ $tests->test('email verification token is random and hashable', function (TestCa
     $test->assertTrue(strtotime(EmailVerificationToken::expiresAt()) > time());
 });
 
+$tests->test('password reset token is random and expires soon', function (TestCase $test): void {
+    $token = PasswordResetToken::generate();
+    $hash = PasswordResetToken::hash($token);
+    $expiresAt = strtotime(PasswordResetToken::expiresAt());
+
+    $test->assertMatches('/^[a-f0-9]{64}$/', $token);
+    $test->assertMatches('/^[a-f0-9]{64}$/', $hash);
+    $test->assertTrue($expiresAt > time());
+    $test->assertTrue($expiresAt <= time() + 60 * 60 + 5);
+});
+
 $tests->test('app url builds absolute links', function (TestCase $test): void {
     putenv('APP_URL=http://localhost:8080');
 
@@ -103,6 +114,31 @@ $tests->test('mailer writes confirmation email to log driver', function (TestCas
     $test->assertTrue(is_string($contents));
     $test->assertTrue(str_contains($contents, 'To: user@example.com'));
     $test->assertTrue(str_contains($contents, 'http://localhost:8080/verify-email?token=abc'));
+
+    unlink($mailLog);
+});
+
+$tests->test('mailer writes password reset email to log driver', function (TestCase $test): void {
+    putenv('MAIL_DRIVER=log');
+
+    $mailLog = STORAGE_PATH . '/mail.log';
+
+    if (is_file($mailLog)) {
+        unlink($mailLog);
+    }
+
+    (new Mailer())->sendPasswordReset(
+        'user@example.com',
+        'tester',
+        'http://localhost:8080/reset-password?token=abc'
+    );
+
+    $contents = file_get_contents($mailLog);
+
+    $test->assertTrue(is_string($contents));
+    $test->assertTrue(str_contains($contents, 'To: user@example.com'));
+    $test->assertTrue(str_contains($contents, 'Reset your Camagru password'));
+    $test->assertTrue(str_contains($contents, 'http://localhost:8080/reset-password?token=abc'));
 
     unlink($mailLog);
 });

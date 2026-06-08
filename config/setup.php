@@ -12,6 +12,7 @@ if ($schema === false) {
 
 Database::connection()->exec($schema);
 ensureVerificationColumns();
+ensurePasswordResetColumns();
 
 echo "Database setup completed.\n";
 
@@ -34,6 +35,24 @@ function ensureVerificationColumns(): void
 
     if (!in_array('users_verification_token_hash_index', existingUserIndexes(), true)) {
         $connection->exec('CREATE INDEX users_verification_token_hash_index ON users (verification_token_hash)');
+    }
+}
+
+function ensurePasswordResetColumns(): void
+{
+    $columns = existingUserColumns();
+    $connection = Database::connection();
+
+    if (!in_array('password_reset_token_hash', $columns, true)) {
+        $connection->exec('ALTER TABLE users ADD COLUMN password_reset_token_hash CHAR(64) NULL AFTER verification_expires_at');
+    }
+
+    if (!in_array('password_reset_expires_at', $columns, true)) {
+        $connection->exec('ALTER TABLE users ADD COLUMN password_reset_expires_at DATETIME NULL AFTER password_reset_token_hash');
+    }
+
+    if (!in_array('users_password_reset_token_hash_index', existingUserIndexes(), true)) {
+        $connection->exec('CREATE INDEX users_password_reset_token_hash_index ON users (password_reset_token_hash)');
     }
 }
 

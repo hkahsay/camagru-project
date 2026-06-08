@@ -102,6 +102,10 @@ a {
     gap: 28px;
 }
 
+.auth-page-narrow {
+    max-width: 680px;
+}
+
 .auth-intro,
 .camera-intro {
     max-width: 680px;
@@ -250,6 +254,19 @@ button:disabled {
 .form-section form {
     display: grid;
     gap: 18px;
+}
+
+.form-link {
+    display: inline-flex;
+    width: fit-content;
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.form-link:hover,
+.form-link:focus-visible {
+    color: var(--primary-hover);
+    text-decoration: underline;
 }
 
 .form-grid {

@@ -111,6 +111,144 @@ final class HomeController
         Response::redirect('/');
     }
 
+    public function forgotPassword(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+            render('forgot-password', [
+                'title' => 'Reset Password',
+                'navItems' => [
+                    ['label' => 'Login', 'href' => '/'],
+                ],
+                'old' => $_SESSION['old'] ?? [],
+                'errors' => $_SESSION['errors'] ?? [],
+                'success' => $_SESSION['success'] ?? '',
+            ]);
+
+            unset($_SESSION['old'], $_SESSION['errors'], $_SESSION['success']);
+            return;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            Response::redirect('/forgot');
+        }
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            http_response_code(419);
+            echo 'Invalid security token.';
+            return;
+        }
+
+        $validator = (new Validator($_POST))
+            ->required('email', 'Email')
+            ->email('email', 'Email');
+
+        if (!$validator->passes()) {
+            $_SESSION['errors'] = $validator->errors();
+            $_SESSION['old'] = [
+                'email' => $validator->value('email'),
+            ];
+
+            Response::redirect('/forgot');
+        }
+
+        $users = new UserRepository();
+        $user = $users->findByEmail($validator->value('email'));
+
+        if ($user !== null) {
+            $resetToken = PasswordResetToken::generate();
+            $users->storePasswordResetToken(
+                (int) $user['id'],
+                PasswordResetToken::hash($resetToken),
+                PasswordResetToken::expiresAt()
+            );
+
+            (new Mailer())->sendPasswordReset(
+                (string) $user['email'],
+                (string) $user['username'],
+                AppUrl::to('/reset-password?token=' . $resetToken)
+            );
+        }
+
+        $_SESSION['success'] = 'If that email address is registered, we sent a password reset link.';
+
+        Response::redirect('/forgot');
+    }
+
+    public function resetPassword(): void
+    {
+        $token = $_SERVER['REQUEST_METHOD'] === 'POST'
+            ? ($_POST['token'] ?? '')
+            : ($_GET['token'] ?? '');
+
+        if (!is_string($token) || !preg_match('/^[a-f0-9]{64}$/', $token)) {
+            $_SESSION['errors'] = [
+                'reset' => ['The password reset link is invalid or expired.'],
+            ];
+
+            Response::redirect('/forgot');
+        }
+
+        $users = new UserRepository();
+
+        if ($users->findByPasswordResetToken($token) === null) {
+            $_SESSION['errors'] = [
+                'reset' => ['The password reset link is invalid or expired.'],
+            ];
+
+            Response::redirect('/forgot');
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+            render('reset-password', [
+                'title' => 'Choose New Password',
+                'navItems' => [
+                    ['label' => 'Login', 'href' => '/'],
+                ],
+                'token' => $token,
+                'errors' => $_SESSION['errors'] ?? [],
+            ]);
+
+            unset($_SESSION['errors']);
+            return;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            Response::redirect('/forgot');
+        }
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            http_response_code(419);
+            echo 'Invalid security token.';
+            return;
+        }
+
+        $validator = (new Validator($_POST))
+            ->required('password', 'Password')
+            ->password('password', 'Password')
+            ->required('password_confirm', 'Password confirmation')
+            ->matches('password_confirm', 'password', 'Password confirmation');
+
+        if (!$validator->passes()) {
+            $_SESSION['errors'] = $validator->errors();
+
+            Response::redirect('/reset-password?token=' . $token);
+        }
+
+        $passwordHash = password_hash($validator->value('password'), PASSWORD_DEFAULT);
+
+        if (!is_string($passwordHash) || !$users->resetPassword($token, $passwordHash)) {
+            $_SESSION['errors'] = [
+                'reset' => ['Could not reset the password. Please request a new link.'],
+            ];
+
+            Response::redirect('/forgot');
+        }
+
+        $_SESSION['success'] = 'Your password has been reset. You can now log in.';
+
+        Response::redirect('/');
+    }
+
     public function logout(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
