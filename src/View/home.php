@@ -130,26 +130,68 @@
         <?php endif; ?>
 
         <div class="camera-layout">
-            <section class="camera-panel" aria-label="Camera preview">
-                <div class="preview">
+            <section class="camera-panel" aria-labelledby="capture-title">
+                <h2 id="capture-title">Camera preview</h2>
+
+                <input type="hidden" id="capture-csrf-token" value="<?= e(Csrf::token()) ?>">
+
+                <div class="preview capture-preview">
                     <video id="webcam" autoplay playsinline muted></video>
+                    <img id="selected-overlay-preview" class="selected-overlay-preview" src="/overlays/camera-frame.svg" alt="">
                 </div>
+
+                <fieldset class="overlay-picker" aria-label="Superposable images">
+                    <legend>Superposable images</legend>
+
+                    <label class="overlay-option">
+                        <input type="radio" name="overlay" value="/overlays/camera-frame.svg" checked>
+                        <img src="/overlays/camera-frame.svg" alt="">
+                        <span>Frame</span>
+                    </label>
+
+                    <label class="overlay-option">
+                        <input type="radio" name="overlay" value="/overlays/sunglasses.svg">
+                        <img src="/overlays/sunglasses.svg" alt="">
+                        <span>Glasses</span>
+                    </label>
+
+                    <label class="overlay-option">
+                        <input type="radio" name="overlay" value="/overlays/stars.svg">
+                        <img src="/overlays/stars.svg" alt="">
+                        <span>Stars</span>
+                    </label>
+                </fieldset>
 
                 <div class="controls">
                     <button id="start-camera" type="button">Start camera</button>
+                    <button id="capture-photo" type="button" disabled>Capture picture</button>
                     <button id="stop-camera" class="secondary" type="button" disabled>Stop camera</button>
                 </div>
 
                 <p id="status" class="status" role="status">Camera is off.</p>
             </section>
 
-            <aside class="side-panel" aria-labelledby="gallery-title">
-                <h2 id="gallery-title">Next steps</h2>
-                <ul>
-                    <li>Preview your webcam feed.</li>
-                    <li>Add photo tools and overlays here later.</li>
-                    <li>Save images to the gallery endpoint.</li>
-                </ul>
+            <aside class="side-panel previous-panel" aria-labelledby="previous-title">
+                <div class="form-section-header">
+                    <h2 id="previous-title">Previous pictures</h2>
+                    <a class="form-link" href="/gallery">Public gallery</a>
+                </div>
+
+                <div id="previous-pictures" class="thumbnail-grid">
+                    <?php if (empty($userImages)): ?>
+                        <p class="empty-thumbnails">Captured pictures will appear here.</p>
+                    <?php else: ?>
+                        <?php foreach ($userImages as $image): ?>
+                            <a href="/gallery#image-<?= (int) $image['id'] ?>" class="thumbnail-link">
+                                <img
+                                    src="/uploads/<?= e($image['file_name']) ?>"
+                                    alt="Previous Camagru picture"
+                                    loading="lazy"
+                                >
+                            </a>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
             </aside>
         </div>
 

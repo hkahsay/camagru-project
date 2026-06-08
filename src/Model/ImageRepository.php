@@ -62,6 +62,21 @@ final class ImageRepository
         return $statement->fetchAll();
     }
 
+    public function forUser(int $userId): array
+    {
+        $statement = Database::connection()->prepare(
+            'SELECT id, file_name, created_at
+            FROM images
+            WHERE user_id = :user_id
+            ORDER BY created_at DESC, id DESC'
+        );
+        $statement->execute([
+            'user_id' => $userId,
+        ]);
+
+        return $statement->fetchAll();
+    }
+
     public function commentsFor(int $imageId): array
     {
         $statement = Database::connection()->prepare(

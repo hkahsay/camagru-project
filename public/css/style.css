@@ -181,6 +181,7 @@ h2 {
 }
 
 .preview {
+    position: relative;
     overflow: hidden;
     width: 100%;
     aspect-ratio: 4 / 3;
@@ -195,6 +196,60 @@ video {
     height: 100%;
     object-fit: cover;
     transform: scaleX(-1);
+}
+
+.selected-overlay-preview {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    pointer-events: none;
+}
+
+.overlay-picker {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 16px 0 0;
+    border: 0;
+    padding: 0;
+}
+
+.overlay-picker legend {
+    grid-column: 1 / -1;
+    margin-bottom: 4px;
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.overlay-option {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px;
+    background: #fff;
+}
+
+.overlay-option input[type="radio"] {
+    width: auto;
+    min-height: auto;
+}
+
+.overlay-option img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    grid-column: 1 / -1;
+    border-radius: 4px;
+    background: var(--surface-muted);
+    object-fit: contain;
+}
+
+.overlay-option span {
+    color: var(--text);
 }
 
 .controls {
@@ -245,6 +300,39 @@ button:disabled {
 .form-section,
 .gallery-section {
     padding: 20px;
+}
+
+.previous-panel {
+    max-height: 760px;
+    overflow: auto;
+}
+
+.thumbnail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.thumbnail-link {
+    display: block;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #111827;
+}
+
+.thumbnail-link img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+}
+
+.empty-thumbnails {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.5;
 }
 
 .side-panel ul {
@@ -494,6 +582,11 @@ input:focus {
 
     .controls {
         display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .overlay-picker,
+    .thumbnail-grid {
         grid-template-columns: 1fr;
     }
 

@@ -7,6 +7,11 @@ final class HomeController
     public function index(): void
     {
         $user = $_SESSION['user'] ?? null;
+        $userImages = [];
+
+        if (is_array($user) && !empty($user['id'])) {
+            $userImages = (new ImageRepository())->forUser((int) $user['id']);
+        }
 
         render('home', [
             'title' => $user === null ? 'Camagru Login' : 'Camagru Camera',
@@ -23,6 +28,7 @@ final class HomeController
             'errors' => $_SESSION['errors'] ?? [],
             'success' => $_SESSION['success'] ?? '',
             'user' => $user,
+            'userImages' => $userImages,
         ]);
 
         unset($_SESSION['old'], $_SESSION['errors'], $_SESSION['success']);
