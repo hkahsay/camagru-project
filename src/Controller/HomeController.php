@@ -202,12 +202,16 @@ final class HomeController
         }
 
         $imageData = $_POST['image'] ?? '';
+        $overlay = $_POST['overlay'] ?? '';
 
-        if (!is_string($imageData)) {
+        if (!is_string($imageData) || !is_string($overlay)) {
             Response::json(['error' => 'Image data is invalid.'], 422);
         }
+        if($overlay === '') {
+            Response::json(['error' => 'Select a superposable image.'], 422);
+        }
 
-        $result = UploadedImage::storeDataUrl($imageData);
+        $result = UploadedImage::storeComposedDataUrl($imageData, $overlay);
 
         if (!$result['ok']) {
             Response::json(['error' => $result['error']], 422);

@@ -144,20 +144,20 @@
                     <legend>Superposable images</legend>
 
                     <label class="overlay-option">
-                        <input type="radio" name="overlay" value="/overlays/camera-frame.svg">
-                        <img src="/overlays/camera-frame.svg" alt="">
+                        <input type="radio" name="overlay" value="frame" data-preview="/overlays/camera-frame.png">
+                        <img src="/overlays/camera-frame.png" alt="">
                         <span>Frame</span>
                     </label>
 
                     <label class="overlay-option">
-                        <input type="radio" name="overlay" value="/overlays/sunglasses.svg">
-                        <img src="/overlays/sunglasses.svg" alt="">
+                        <input type="radio" name="overlay" value="sunglasses" data-preview="/overlays/sunglasses.png">
+                        <img src="/overlays/sunglasses.png" alt="">
                         <span>Glasses</span>
                     </label>
 
                     <label class="overlay-option">
-                        <input type="radio" name="overlay" value="/overlays/stars.svg">
-                        <img src="/overlays/stars.svg" alt="">
+                        <input type="radio" name="overlay" value="stars" data-preview="/overlays/stars.png">
+                        <img src="/overlays/stars.png" alt="">
                         <span>Stars</span>
                     </label>
                 </fieldset>

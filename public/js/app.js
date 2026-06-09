@@ -15,6 +15,7 @@ function initWebcamPreview() {
 
     let cameraStream = null;
     let selectedOverlay = '';
+    let selectedOverlayPreview = '';
 
     function updateCaptureState() {
         captureButton.disabled = cameraStream === null || selectedOverlay === '';
@@ -59,20 +60,6 @@ function initWebcamPreview() {
         statusText.textContent = 'Camera is off.';
     }
 
-    function loadOverlay(src) {
-        return new Promise((resolve, reject) => {
-            if (!src) {
-                resolve(null);
-                return;
-            }
-
-            const image = new Image();
-            image.onload = () => resolve(image);
-            image.onerror = reject;
-            image.src = src;
-        });
-    }
-
     async function capturePhoto() {
         if (!cameraStream || video.videoWidth === 0 || video.videoHeight === 0) {
             statusText.textContent = 'Start the camera before capturing.';
@@ -101,15 +88,10 @@ function initWebcamPreview() {
         context.restore();
 
         try {
-            const overlay = await loadOverlay(selectedOverlay);
-
-            if (overlay) {
-                context.drawImage(overlay, 0, 0, canvas.width, canvas.height);
-            }
-
             const body = new URLSearchParams();
             body.set('csrf_token', csrfToken.value);
             body.set('image', canvas.toDataURL('image/jpeg', 0.92));
+            body.set('overlay', selectedOverlay);
 
             const response = await fetch('/save-image', {
                 method: 'POST',
@@ -157,9 +139,10 @@ function initWebcamPreview() {
     overlayOptions.forEach((option) => {
         option.addEventListener('change', () => {
             selectedOverlay = option.value;
+            selectedOverlayPreview = option.dataset.preview || '';
 
             if (overlayPreview) {
-                overlayPreview.src = selectedOverlay;
+                overlayPreview.src = selectedOverlayPreview;
                 overlayPreview.hidden = false;
             }
 
