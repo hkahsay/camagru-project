@@ -14,7 +14,11 @@ function initWebcamPreview() {
     }
 
     let cameraStream = null;
-    let selectedOverlay = document.querySelector('input[name="overlay"]:checked')?.value || '';
+    let selectedOverlay = '';
+
+    function updateCaptureState() {
+        captureButton.disabled = cameraStream === null || selectedOverlay === '';
+    }
 
     async function startCamera() {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -31,8 +35,10 @@ function initWebcamPreview() {
             video.srcObject = cameraStream;
             startButton.disabled = true;
             stopButton.disabled = false;
-            captureButton.disabled = false;
-            statusText.textContent = 'Camera preview is active.';
+            updateCaptureState();
+            statusText.textContent = selectedOverlay === ''
+                ? 'Camera preview is active. Select a superposable image before capturing.'
+                : 'Camera preview is active.';
         } catch (error) {
             statusText.textContent = 'Camera access was blocked or no camera was found.';
             console.error('Unable to start camera:', error);
@@ -49,7 +55,7 @@ function initWebcamPreview() {
         video.srcObject = null;
         startButton.disabled = false;
         stopButton.disabled = true;
-        captureButton.disabled = true;
+        updateCaptureState();
         statusText.textContent = 'Camera is off.';
     }
 
@@ -70,6 +76,12 @@ function initWebcamPreview() {
     async function capturePhoto() {
         if (!cameraStream || video.videoWidth === 0 || video.videoHeight === 0) {
             statusText.textContent = 'Start the camera before capturing.';
+            return;
+        }
+
+        if (selectedOverlay === '') {
+            statusText.textContent = 'Select a superposable image before capturing.';
+            updateCaptureState();
             return;
         }
 
@@ -119,7 +131,7 @@ function initWebcamPreview() {
             statusText.textContent = 'Could not capture the picture.';
             console.error('Unable to capture picture:', error);
         } finally {
-            captureButton.disabled = cameraStream === null;
+            updateCaptureState();
         }
     }
 
@@ -148,10 +160,18 @@ function initWebcamPreview() {
 
             if (overlayPreview) {
                 overlayPreview.src = selectedOverlay;
+                overlayPreview.hidden = false;
+            }
+
+            updateCaptureState();
+
+            if (cameraStream !== null) {
+                statusText.textContent = 'Camera preview is active.';
             }
         });
     });
 
+    updateCaptureState();
     startButton.addEventListener('click', startCamera);
     stopButton.addEventListener('click', stopCamera);
     captureButton.addEventListener('click', capturePhoto);

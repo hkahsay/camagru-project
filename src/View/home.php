@@ -137,14 +137,14 @@
 
                 <div class="preview capture-preview">
                     <video id="webcam" autoplay playsinline muted></video>
-                    <img id="selected-overlay-preview" class="selected-overlay-preview" src="/overlays/camera-frame.svg" alt="">
+                    <img id="selected-overlay-preview" class="selected-overlay-preview" src="" alt="" hidden>
                 </div>
 
                 <fieldset class="overlay-picker" aria-label="Superposable images">
                     <legend>Superposable images</legend>
 
                     <label class="overlay-option">
-                        <input type="radio" name="overlay" value="/overlays/camera-frame.svg" checked>
+                        <input type="radio" name="overlay" value="/overlays/camera-frame.svg">
                         <img src="/overlays/camera-frame.svg" alt="">
                         <span>Frame</span>
                     </label>
