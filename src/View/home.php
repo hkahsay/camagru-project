@@ -137,6 +137,7 @@
 
                 <div class="preview capture-preview">
                     <video id="webcam" autoplay playsinline muted></video>
+                    <img id="uploaded-image-preview" class="uploaded-image-preview" src="" alt="" hidden>
                     <img id="selected-overlay-preview" class="selected-overlay-preview" src="" alt="" hidden>
                 </div>
 
@@ -162,9 +163,15 @@
                     </label>
                 </fieldset>
 
+                <label class="upload-control">
+                    <span>Upload an image instead</span>
+                    <input id="uploaded-image" type="file" accept="image/jpeg,image/png,image/webp">
+                </label>
+
                 <div class="controls">
                     <button id="start-camera" type="button">Start camera</button>
                     <button id="capture-photo" type="button" disabled>Capture picture</button>
+                    <button id="save-uploaded-image" type="button" disabled>Save uploaded image</button>
                     <button id="stop-camera" class="secondary" type="button" disabled>Stop camera</button>
                 </div>
 
@@ -182,13 +189,24 @@
                         <p class="empty-thumbnails">Captured pictures will appear here.</p>
                     <?php else: ?>
                         <?php foreach ($userImages as $image): ?>
-                            <a href="/gallery#image-<?= (int) $image['id'] ?>" class="thumbnail-link">
-                                <img
-                                    src="/uploads/<?= e($image['file_name']) ?>"
-                                    alt="Previous Camagru picture"
-                                    loading="lazy"
-                                >
-                            </a>
+                            <div class="thumbnail-item">
+                                <a href="/gallery#image-<?= (int) $image['id'] ?>" class="thumbnail-link">
+                                    <img
+                                        src="/uploads/<?= e($image['file_name']) ?>"
+                                        alt="Previous Camagru picture"
+                                        loading="lazy"
+                                    >
+                                </a>
+                                <form action="/gallery/delete" method="post">
+                                    <?= Csrf::field() ?>
+                                    <input type="hidden" name="image_id" value="<?= (int) $image['id'] ?>">
+                                    <button class="danger icon-button thumbnail-delete" type="submit" aria-label="Delete image" title="Delete image">
+                                        <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                                            <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-1 6h2v9H8V9Zm6 0h2v9h-2V9Zm-9 0h14l-1 12H6L5 9Z"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>

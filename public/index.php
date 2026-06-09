@@ -32,6 +32,11 @@ if ($path === '/gallery/comment') {
     return;
 }
 
+if ($path === '/gallery/delete') {
+    $controller->deleteImage();
+    return;
+}
+
 if ($path === '/upload') {
     $controller->uploadImage();
     return;

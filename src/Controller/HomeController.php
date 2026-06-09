@@ -162,6 +162,42 @@ final class HomeController
         Response::redirect('/gallery#image-' . $imageId);
     }
 
+    public function deleteImage(): void
+    {
+        $sessionUser = $this->requireUser();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            Response::redirect('/gallery');
+        }
+
+        if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
+            http_response_code(419);
+            echo 'Invalid security token.';
+            return;
+        }
+
+        $imageId = (int) ($_POST['image_id'] ?? 0);
+        $fileName = (new ImageRepository())->deleteOwnedBy($imageId, (int) $sessionUser['id']);
+
+        if ($fileName === null) {
+            $_SESSION['errors'] = [
+                'gallery' => ['You can delete only your own images.'],
+            ];
+
+            Response::redirect('/gallery');
+        }
+
+        $path = UPLOAD_PATH . '/' . $fileName;
+
+        if (is_file($path)) {
+            unlink($path);
+        }
+
+        $_SESSION['success'] = 'Image deleted.';
+
+        Response::redirect('/gallery');
+    }
+
     public function uploadImage(): void
     {
         $sessionUser = $this->requireUser();
@@ -207,7 +243,7 @@ final class HomeController
         if (!is_string($imageData) || !is_string($overlay)) {
             Response::json(['error' => 'Image data is invalid.'], 422);
         }
-        if($overlay === '') {
+        if ($overlay === '') {
             Response::json(['error' => 'Select a superposable image.'], 422);
         }
 

@@ -39,6 +39,7 @@ final class ImageRepository
         $statement = Database::connection()->prepare(
             'SELECT
                 images.id,
+                images.user_id,
                 images.file_name,
                 images.created_at,
                 users.username,
@@ -52,7 +53,7 @@ final class ImageRepository
             LEFT JOIN image_likes AS viewer_likes
                 ON viewer_likes.image_id = images.id
                 AND viewer_likes.user_id = :viewer_id
-            GROUP BY images.id, images.file_name, images.created_at, users.username
+            GROUP BY images.id, images.user_id, images.file_name, images.created_at, users.username
             ORDER BY images.created_at DESC, images.id DESC'
         );
         $statement->execute([
@@ -148,5 +149,26 @@ final class ImageRepository
             'body' => $body,
             'created_at' => gmdate('Y-m-d H:i:s'),
         ]);
+    }
+
+    public function deleteOwnedBy(int $imageId, int $userId): ?string
+    {
+        $image = $this->find($imageId);
+
+        if ($image === null || (int) $image['user_id'] !== $userId) {
+            return null;
+        }
+
+        $statement = Database::connection()->prepare(
+            'DELETE FROM images
+            WHERE id = :id
+            AND user_id = :user_id'
+        );
+        $statement->execute([
+            'id' => $imageId,
+            'user_id' => $userId,
+        ]);
+
+        return $statement->rowCount() === 1 ? (string) $image['file_name'] : null;
     }
 }
