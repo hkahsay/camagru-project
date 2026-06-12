@@ -1,3 +1,8 @@
+<?php
+$currentPage = max(1, (int) ($currentPage ?? 1));
+$totalPages = max(1, (int) ($totalPages ?? 1));
+?>
+
 <section class="gallery-page" aria-labelledby="gallery-title">
     <div class="auth-intro">
         <p class="eyebrow">Gallery</p>
@@ -39,6 +44,7 @@
                                 <form action="/gallery/like" method="post">
                                     <?= Csrf::field() ?>
                                     <input type="hidden" name="image_id" value="<?= (int) $image['id'] ?>">
+                                    <input type="hidden" name="page" value="<?= $currentPage ?>">
                                     <button
                                         class="secondary icon-button <?= ((int) $image['liked_by_viewer']) === 1 ? 'liked' : '' ?>"
                                         type="submit"
@@ -55,6 +61,7 @@
                                     <form action="/gallery/delete" method="post">
                                         <?= Csrf::field() ?>
                                         <input type="hidden" name="image_id" value="<?= (int) $image['id'] ?>">
+                                        <input type="hidden" name="page" value="<?= $currentPage ?>">
                                         <button class="danger icon-button" type="submit" aria-label="Delete image" title="Delete image">
                                             <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
                                                 <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-1 6h2v9H8V9Zm6 0h2v9h-2V9Zm-9 0h14l-1 12H6L5 9Z"/>
@@ -83,6 +90,7 @@
                             <form class="comment-form" action="/gallery/comment" method="post">
                                 <?= Csrf::field() ?>
                                 <input type="hidden" name="image_id" value="<?= (int) $image['id'] ?>">
+                                <input type="hidden" name="page" value="<?= $currentPage ?>">
                                 <label>
                                     <span>Comment</span>
                                     <input
@@ -101,5 +109,19 @@
                 </article>
             <?php endforeach; ?>
         </div>
+
+        <?php if ($totalPages > 1): ?>
+            <nav class="pagination" aria-label="Gallery pages">
+                <?php if ($currentPage > 1): ?>
+                    <a class="pagination-link" href="/gallery?page=<?= $currentPage - 1 ?>">Previous</a>
+                <?php endif; ?>
+
+                <span class="pagination-status">Page <?= $currentPage ?> of <?= $totalPages ?></span>
+
+                <?php if ($currentPage < $totalPages): ?>
+                    <a class="pagination-link" href="/gallery?page=<?= $currentPage + 1 ?>">Next</a>
+                <?php endif; ?>
+            </nav>
+        <?php endif; ?>
     <?php endif; ?>
 </section>

@@ -47,6 +47,16 @@
                     <p class="form-note">This email address is waiting for confirmation.</p>
                 <?php endif; ?>
 
+                <label class="checkbox-label">
+                    <input
+                        type="checkbox"
+                        name="comment_notifications_enabled"
+                        value="1"
+                        <?= old('comment_notifications_enabled', $old ?? []) === '1' ? 'checked' : '' ?>
+                    >
+                    <span>Email me when someone comments on my images</span>
+                </label>
+
                 <button type="submit">Save profile</button>
             </form>
         </section>

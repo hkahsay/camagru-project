@@ -13,6 +13,7 @@ if ($schema === false) {
 Database::connection()->exec($schema);
 ensureVerificationColumns();
 ensurePasswordResetColumns();
+ensurePreferenceColumns();
 ensureGalleryTables();
 
 echo "Database setup completed.\n";
@@ -54,6 +55,19 @@ function ensurePasswordResetColumns(): void
 
     if (!in_array('users_password_reset_token_hash_index', existingUserIndexes(), true)) {
         $connection->exec('CREATE INDEX users_password_reset_token_hash_index ON users (password_reset_token_hash)');
+    }
+}
+
+function ensurePreferenceColumns(): void
+{
+    $columns = existingUserColumns();
+
+    if (!in_array('comment_notifications_enabled', $columns, true)) {
+        Database::connection()->exec(
+            'ALTER TABLE users
+            ADD COLUMN comment_notifications_enabled TINYINT(1) NOT NULL DEFAULT 1
+            AFTER password_reset_expires_at'
+        );
     }
 }
 

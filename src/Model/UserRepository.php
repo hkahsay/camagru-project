@@ -27,7 +27,7 @@ final class UserRepository
     public function findById(int $id): ?array
     {
         $statement = Database::connection()->prepare(
-            'SELECT id, username, email, password_hash, email_verified_at
+            'SELECT id, username, email, password_hash, email_verified_at, comment_notifications_enabled
             FROM users
             WHERE id = :id
             LIMIT 1'
@@ -44,7 +44,7 @@ final class UserRepository
     public function findByLogin(string $login): ?array
     {
         $statement = Database::connection()->prepare(
-            'SELECT id, username, email, password_hash, email_verified_at
+            'SELECT id, username, email, password_hash, email_verified_at, comment_notifications_enabled
             FROM users
             WHERE username_normalized = :username_login
             OR email_normalized = :email_login
@@ -64,7 +64,7 @@ final class UserRepository
     public function findByEmail(string $email): ?array
     {
         $statement = Database::connection()->prepare(
-            'SELECT id, username, email
+            'SELECT id, username, email, comment_notifications_enabled
             FROM users
             WHERE email_normalized = :email
             LIMIT 1'
@@ -224,6 +224,7 @@ final class UserRepository
         int $userId,
         string $username,
         string $email,
+        bool $commentNotificationsEnabled,
         bool $emailChanged,
         ?string $verificationTokenHash,
         ?string $verificationExpiresAt
@@ -235,6 +236,7 @@ final class UserRepository
                     username_normalized = :username_normalized,
                     email = :email,
                     email_normalized = :email_normalized,
+                    comment_notifications_enabled = :comment_notifications_enabled,
                     email_verified_at = NULL,
                     verification_token_hash = :verification_token_hash,
                     verification_expires_at = :verification_expires_at
@@ -246,6 +248,7 @@ final class UserRepository
                 'username_normalized' => self::normalize($username),
                 'email' => $email,
                 'email_normalized' => self::normalize($email),
+                'comment_notifications_enabled' => $commentNotificationsEnabled ? 1 : 0,
                 'verification_token_hash' => $verificationTokenHash,
                 'verification_expires_at' => $verificationExpiresAt,
                 'id' => $userId,
@@ -259,7 +262,8 @@ final class UserRepository
             SET username = :username,
                 username_normalized = :username_normalized,
                 email = :email,
-                email_normalized = :email_normalized
+                email_normalized = :email_normalized,
+                comment_notifications_enabled = :comment_notifications_enabled
             WHERE id = :id'
         );
 
@@ -268,6 +272,7 @@ final class UserRepository
             'username_normalized' => self::normalize($username),
             'email' => $email,
             'email_normalized' => self::normalize($email),
+            'comment_notifications_enabled' => $commentNotificationsEnabled ? 1 : 0,
             'id' => $userId,
         ]);
 

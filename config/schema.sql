@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
     verification_expires_at DATETIME NULL,
     password_reset_token_hash CHAR(64) NULL,
     password_reset_expires_at DATETIME NULL,
+    comment_notifications_enabled TINYINT(1) NOT NULL DEFAULT 1,
     created_at DATETIME NOT NULL,
     UNIQUE KEY users_username_normalized_unique (username_normalized),
     UNIQUE KEY users_email_normalized_unique (email_normalized),

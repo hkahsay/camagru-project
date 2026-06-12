@@ -34,10 +34,34 @@ final class ImageRepository
         return $image === false ? null : $image;
     }
 
-    public function all(?int $viewerId = null): array
+    public function findWithAuthor(int $id): ?array
     {
         $statement = Database::connection()->prepare(
             'SELECT
+                images.id,
+                images.user_id,
+                images.file_name,
+                images.created_at,
+                users.username,
+                users.email,
+                users.comment_notifications_enabled
+            FROM images
+            INNER JOIN users ON users.id = images.user_id
+            WHERE images.id = :id
+            LIMIT 1'
+        );
+        $statement->execute([
+            'id' => $id,
+        ]);
+
+        $image = $statement->fetch();
+
+        return $image === false ? null : $image;
+    }
+
+    public function all(?int $viewerId = null, ?int $limit = null, int $offset = 0): array
+    {
+        $sql = 'SELECT
                 images.id,
                 images.user_id,
                 images.file_name,
@@ -54,13 +78,43 @@ final class ImageRepository
                 ON viewer_likes.image_id = images.id
                 AND viewer_likes.user_id = :viewer_id
             GROUP BY images.id, images.user_id, images.file_name, images.created_at, users.username
-            ORDER BY images.created_at DESC, images.id DESC'
-        );
-        $statement->execute([
+            ORDER BY images.created_at DESC, images.id DESC';
+        $parameters = [
             'viewer_id' => $viewerId,
-        ]);
+        ];
+
+        if ($limit !== null) {
+            $sql .= ' LIMIT :limit OFFSET :offset';
+            $parameters['limit'] = max(1, $limit);
+            $parameters['offset'] = max(0, $offset);
+        }
+
+        $statement = Database::connection()->prepare($sql);
+
+        foreach ($parameters as $name => $value) {
+            $type = match (true) {
+                is_int($value) => PDO::PARAM_INT,
+                $value === null => PDO::PARAM_NULL,
+                default => PDO::PARAM_STR,
+            };
+
+            $statement->bindValue(
+                ':' . $name,
+                $value,
+                $type
+            );
+        }
+
+        $statement->execute();
 
         return $statement->fetchAll();
+    }
+
+    public function countAll(): int
+    {
+        $statement = Database::connection()->query('SELECT COUNT(*) FROM images');
+
+        return (int) $statement->fetchColumn();
     }
 
     public function forUser(int $userId): array

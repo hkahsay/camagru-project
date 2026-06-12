@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 final class HomeController
 {
+    private const GALLERY_IMAGES_PER_PAGE = 5;
+
     public function index(): void
     {
         $user = $_SESSION['user'] ?? null;
@@ -64,7 +66,14 @@ final class HomeController
         $sessionUser = $_SESSION['user'] ?? null;
         $viewerId = is_array($sessionUser) && !empty($sessionUser['id']) ? (int) $sessionUser['id'] : null;
         $imageRepository = new ImageRepository();
-        $images = $imageRepository->all($viewerId);
+        $totalImages = $imageRepository->countAll();
+        $totalPages = max(1, (int) ceil($totalImages / self::GALLERY_IMAGES_PER_PAGE));
+        $currentPage = min($this->galleryPageFrom($_GET['page'] ?? null), $totalPages);
+        $images = $imageRepository->all(
+            $viewerId,
+            self::GALLERY_IMAGES_PER_PAGE,
+            ($currentPage - 1) * self::GALLERY_IMAGES_PER_PAGE
+        );
 
         render('gallery', [
             'title' => 'Camagru Gallery',
@@ -84,6 +93,9 @@ final class HomeController
                 },
                 $images
             ),
+            'currentPage' => $currentPage,
+            'totalPages' => $totalPages,
+            'imagesPerPage' => self::GALLERY_IMAGES_PER_PAGE,
             'errors' => $_SESSION['errors'] ?? [],
             'success' => $_SESSION['success'] ?? '',
             'user' => $sessionUser,
@@ -97,7 +109,7 @@ final class HomeController
         $sessionUser = $this->requireUser();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            Response::redirect('/gallery');
+            Response::redirect($this->galleryUrl());
         }
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
@@ -114,12 +126,12 @@ final class HomeController
                 'gallery' => ['This image is no longer available.'],
             ];
 
-            Response::redirect('/gallery');
+            Response::redirect($this->galleryUrl());
         }
 
         $images->toggleLike($imageId, (int) $sessionUser['id']);
 
-        Response::redirect('/gallery#image-' . $imageId);
+        Response::redirect($this->galleryUrl($imageId));
     }
 
     public function commentImage(): void
@@ -127,7 +139,7 @@ final class HomeController
         $sessionUser = $this->requireUser();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            Response::redirect('/gallery');
+            Response::redirect($this->galleryUrl());
         }
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
@@ -138,13 +150,14 @@ final class HomeController
 
         $imageId = (int) ($_POST['image_id'] ?? 0);
         $images = new ImageRepository();
+        $image = $imageId > 0 ? $images->findWithAuthor($imageId) : null;
 
-        if ($imageId < 1 || $images->find($imageId) === null) {
+        if ($image === null) {
             $_SESSION['errors'] = [
                 'gallery' => ['This image is no longer available.'],
             ];
 
-            Response::redirect('/gallery');
+            Response::redirect($this->galleryUrl());
         }
 
         $validator = (new Validator($_POST))
@@ -154,12 +167,24 @@ final class HomeController
         if (!$validator->passes()) {
             $_SESSION['errors'] = $validator->errors();
 
-            Response::redirect('/gallery#image-' . $imageId);
+            Response::redirect($this->galleryUrl($imageId));
         }
 
         $images->addComment($imageId, (int) $sessionUser['id'], $validator->value('comment'));
 
-        Response::redirect('/gallery#image-' . $imageId);
+        if (
+            (int) $image['user_id'] !== (int) $sessionUser['id']
+            && (int) $image['comment_notifications_enabled'] === 1
+        ) {
+            (new Mailer())->sendCommentNotification(
+                (string) $image['email'],
+                (string) $image['username'],
+                (string) $sessionUser['username'],
+                AppUrl::to($this->galleryUrl($imageId))
+            );
+        }
+
+        Response::redirect($this->galleryUrl($imageId));
     }
 
     public function deleteImage(): void
@@ -167,7 +192,7 @@ final class HomeController
         $sessionUser = $this->requireUser();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            Response::redirect('/gallery');
+            Response::redirect($this->galleryUrl());
         }
 
         if (!Csrf::verify($_POST['csrf_token'] ?? null)) {
@@ -184,7 +209,7 @@ final class HomeController
                 'gallery' => ['You can delete only your own images.'],
             ];
 
-            Response::redirect('/gallery');
+            Response::redirect($this->galleryUrl());
         }
 
         $path = UPLOAD_PATH . '/' . $fileName;
@@ -195,7 +220,7 @@ final class HomeController
 
         $_SESSION['success'] = 'Image deleted.';
 
-        Response::redirect('/gallery');
+        Response::redirect($this->galleryUrl());
     }
 
     public function uploadImage(): void
@@ -306,6 +331,7 @@ final class HomeController
             'old' => $_SESSION['old'] ?? [
                 'username' => (string) $user['username'],
                 'email' => (string) $user['email'],
+                'comment_notifications_enabled' => ((int) $user['comment_notifications_enabled']) === 1 ? '1' : '0',
             ],
             'errors' => $_SESSION['errors'] ?? [],
             'success' => $_SESSION['success'] ?? '',
@@ -346,6 +372,7 @@ final class HomeController
 
         $username = $validator->value('username');
         $email = $validator->value('email');
+        $commentNotificationsEnabled = isset($_POST['comment_notifications_enabled']);
 
         if ($users->existsByUsernameExcept($username, (int) $currentUser['id'])) {
             $validator->addError('username', 'This username is already taken.');
@@ -360,6 +387,7 @@ final class HomeController
             $_SESSION['old'] = [
                 'username' => $username,
                 'email' => $email,
+                'comment_notifications_enabled' => $commentNotificationsEnabled ? '1' : '0',
             ];
 
             Response::redirect('/account');
@@ -379,6 +407,7 @@ final class HomeController
             (int) $currentUser['id'],
             $username,
             $email,
+            $commentNotificationsEnabled,
             $emailChanged,
             $verificationTokenHash,
             $verificationExpiresAt
@@ -388,6 +417,7 @@ final class HomeController
             'id' => (int) $currentUser['id'],
             'username' => $username,
             'email' => $email,
+            'comment_notifications_enabled' => $commentNotificationsEnabled ? 1 : 0,
         ];
 
         if ($emailChanged) {
@@ -769,6 +799,29 @@ final class HomeController
         $_SESSION['success'] = 'Account created. We sent a confirmation link to your email address. Confirm it before signing in.';
 
         Response::redirect('/');
+    }
+
+    private function galleryPageFrom(mixed $page): int
+    {
+        if (!is_string($page) && !is_int($page)) {
+            return 1;
+        }
+
+        $page = (int) $page;
+
+        return max(1, $page);
+    }
+
+    private function galleryUrl(?int $imageId = null): string
+    {
+        $page = $this->galleryPageFrom($_POST['page'] ?? $_GET['page'] ?? null);
+        $url = $page > 1 ? '/gallery?page=' . $page : '/gallery';
+
+        if ($imageId !== null) {
+            $url .= '#image-' . $imageId;
+        }
+
+        return $url;
     }
 
     private function requireUser(): array

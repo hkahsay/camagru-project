@@ -32,6 +32,11 @@ function initWebcamPreview() {
             return;
         }
 
+        if (!window.isSecureContext) {
+            statusText.textContent = 'Camera needs localhost or HTTPS. Open the app at http://localhost:8080.';
+            return;
+        }
+
         try {
             cameraStream = await navigator.mediaDevices.getUserMedia({
                 video: true,
@@ -46,8 +51,15 @@ function initWebcamPreview() {
                 ? 'Camera preview is active. Select a superposable image before capturing.'
                 : 'Camera preview is active.';
         } catch (error) {
-            statusText.textContent = 'Camera access was blocked or no camera was found.';
-            console.error('Unable to start camera:', error);
+            if (error.name === 'NotAllowedError' || error.name === 'SecurityError') {
+                statusText.textContent = 'Camera permission is blocked. Allow camera access in your browser settings.';
+            } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+                statusText.textContent = 'No camera was found. Connect or enable a webcam, then try again.';
+            } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+                statusText.textContent = 'The camera is already in use by another app or cannot be opened.';
+            } else {
+                statusText.textContent = 'Camera access failed. Check browser and system camera permissions.';
+            }
         }
     }
 
@@ -100,7 +112,6 @@ function initWebcamPreview() {
             statusText.textContent = 'Picture captured and saved.';
         } catch (error) {
             statusText.textContent = 'Could not save the picture.';
-            console.error('Unable to save picture:', error);
         } finally {
             updateCaptureState();
         }

@@ -20,6 +20,18 @@ final class Mailer
         $this->send($email, $subject, $message);
     }
 
+    public function sendCommentNotification(
+        string $email,
+        string $username,
+        string $commenter,
+        string $imageUrl
+    ): void {
+        $subject = 'New comment on your Camagru image';
+        $message = "Hello {$username},\n\n{$commenter} commented on your Camagru image.\n\nView it here:\n{$imageUrl}\n";
+
+        $this->send($email, $subject, $message);
+    }
+
     private function send(string $email, string $subject, string $message): void
     {
         if (getenv('MAIL_DRIVER') === 'smtp') {

@@ -143,4 +143,31 @@ $tests->test('mailer writes password reset email to log driver', function (TestC
     unlink($mailLog);
 });
 
+$tests->test('mailer writes comment notification email to log driver', function (TestCase $test): void {
+    putenv('MAIL_DRIVER=log');
+
+    $mailLog = STORAGE_PATH . '/mail.log';
+
+    if (is_file($mailLog)) {
+        unlink($mailLog);
+    }
+
+    (new Mailer())->sendCommentNotification(
+        'author@example.com',
+        'author',
+        'commenter',
+        'http://localhost:8080/gallery#image-12'
+    );
+
+    $contents = file_get_contents($mailLog);
+
+    $test->assertTrue(is_string($contents));
+    $test->assertTrue(str_contains($contents, 'To: author@example.com'));
+    $test->assertTrue(str_contains($contents, 'New comment on your Camagru image'));
+    $test->assertTrue(str_contains($contents, 'commenter commented on your Camagru image.'));
+    $test->assertTrue(str_contains($contents, 'http://localhost:8080/gallery#image-12'));
+
+    unlink($mailLog);
+});
+
 exit($tests->finish());
