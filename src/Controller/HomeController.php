@@ -296,7 +296,7 @@ final class HomeController
         }
 
         $path = UPLOAD_PATH . '/' . $fileName;
-
+    
         if (!is_file($path)) {
             http_response_code(404);
             echo 'Image not found.';
@@ -394,6 +394,7 @@ final class HomeController
         }
 
         $emailChanged = mb_strtolower(trim($email)) !== mb_strtolower(trim((string) $currentUser['email']));
+        $verificationToken = null;
         $verificationTokenHash = null;
         $verificationExpiresAt = null;
 
