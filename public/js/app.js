@@ -26,6 +26,21 @@ function initWebcamPreview() {
         saveUploadButton.disabled = uploadedImageData === '' || selectedOverlay === '';
     }
 
+    function clearUploadedImage() {
+        uploadedImageData = '';
+
+        if (uploadedInput) {
+            uploadedInput.value = '';
+        }
+
+        if (uploadedPreview) {
+            uploadedPreview.hidden = true;
+            uploadedPreview.src = '';
+        }
+
+        updateCaptureState();
+    }
+
     async function startCamera() {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             statusText.textContent = 'Your browser does not support webcam access.';
@@ -46,6 +61,7 @@ function initWebcamPreview() {
             video.srcObject = cameraStream;
             startButton.disabled = true;
             stopButton.disabled = false;
+            clearUploadedImage();
             updateCaptureState();
             statusText.textContent = selectedOverlay === ''
                 ? 'Camera preview is active. Select a superposable image before capturing.'
@@ -81,7 +97,7 @@ function initWebcamPreview() {
         if (selectedOverlay === '') {
             statusText.textContent = 'Select a superposable image before saving.';
             updateCaptureState();
-            return;
+            return false;
         }
 
         captureButton.disabled = true;
@@ -105,13 +121,15 @@ function initWebcamPreview() {
 
             if (!response.ok) {
                 statusText.textContent = result.error || 'Could not save the picture.';
-                return;
+                return false;
             }
 
             addThumbnail(result.id, result.file);
             statusText.textContent = 'Picture captured and saved.';
+            return true;
         } catch (error) {
             statusText.textContent = 'Could not save the picture.';
+            return false;
         } finally {
             updateCaptureState();
         }
@@ -144,7 +162,11 @@ function initWebcamPreview() {
             return;
         }
 
-        await saveImageData(uploadedImageData);
+        const saved = await saveImageData(uploadedImageData);
+
+        if (saved) {
+            clearUploadedImage();
+        }
     }
 
     function addThumbnail(id, fileName) {
